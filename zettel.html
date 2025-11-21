@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Panel de questions Prog2 – Streams, Generics, Collections, Maven</title>
+  <style>
+    body {
+      background: #ffffff;
+      color: #000000;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 1.5rem;
+      line-height: 1.5;
+    }
+    h1, h2, h3 {
+      margin-top: 1.6rem;
+    }
+    section {
+      margin-bottom: 2rem;
+      border-top: 2px solid #444;
+      padding-top: 1rem;
+    }
+    details {
+      margin: 0.4rem 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 0.3rem 0.6rem;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    code {
+      font-family: "JetBrains Mono", Consolas, monospace;
+      font-size: 0.9rem;
+      background: #f4f4f4;
+      padding: 0 3px;
+      border-radius: 3px;
+    }
+    ul {
+      margin-top: 0.2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Panel de questions – Prog2</h1>
+  <p>
+    Questions de compréhension possibles pour l’évaluation, avec réponses
+    complètes. Thèmes : <strong>Streams</strong>, <strong>Generics</strong>,
+    <strong>Collections</strong>, <strong>JShell &amp; Maven</strong>.
+    Utilise les blocs &lt;details&gt; comme mini-quizz : lis la question, réponds
+    dans ta tête, puis ouvre pour vérifier.
+  </p>
+
+  <!-- ===================== STREAMS ===================== -->
+  <section id="streams">
+    <h2>1. Streams (création, opérations, réduction, évaluation)</h2>
+
+    <h3>1.1 Concepts de base</h3>
+
+    <details>
+      <summary>1. Qu’est-ce qu’un <code>Stream</code> en Java, et en quoi est-il différent d’une <code>Collection</code> ?</summary>
+      <p>
+        Une <strong>Collection</strong> (par ex. <code>List</code>, <code>Set</code>) est une
+        <em>structure de données</em> qui stocke des éléments en mémoire. On peut y
+        ajouter, retirer, modifier des éléments.<br />
+        Un <strong>Stream</strong> est une <em>vue abstraite</em> sur une séquence de
+        données : il ne stocke pas, il décrit un <em>pipeline de traitement</em>
+        (filtrer, transformer, réduire). Le Stream lit les données d’une source
+        (Collection, tableau, fichier, générateur…) et applique des opérations
+        déclaratives comme <code>filter</code>, <code>map</code>, <code>sorted</code>,
+        <code>collect</code>. Après une opération terminale (par ex.
+        <code>collect</code>), le Stream est <strong>consommé</strong> et ne peut pas
+        être réutilisé.
+      </p>
+    </details>
+
+    <details>
+      <summary>2. Que signifie « opération intermédiaire » et « opération terminale » sur un Stream ? Donne 3 exemples de chaque.</summary>
+      <p>
+        Une <strong>opération intermédiaire</strong> renvoie un nouveau Stream. Elle
+        décrit une étape du pipeline, mais n’exécute rien tant qu’aucune
+        opération terminale n’est appelée. Exemples :
+      </p>
+      <ul>
+        <li><code>map</code>, <code>filter</code>, <code>flatMap</code></li>
+        <li><code>distinct</code>, <code>sorted</code>, <code>limit</code>, <code>skip</code></li>
+        <li><code>takeWhile</code>, <code>dropWhile</code>, <code>peek</code></li>
+      </ul>
+      <p>
+        Une <strong>opération terminale</strong> déclenche réellement le calcul et
+        renvoie un résultat non-Stream (valeur, <code>Optional</code>, Collection,
+        etc.). Exemples :
+      </p>
+      <ul>
+        <li><code>collect</code>, <code>toArray</code>, <code>reduce</code></li>
+        <li><code>forEach</code>, <code>count</code></li>
+        <li><code>findFirst</code>, <code>anyMatch</code>, <code>max</code>, <code>min</code></li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>3. Qu’est-ce que la « lazy evaluation » (évaluation paresseuse) des Streams ?</summary>
+      <p>
+        Toutes les opérations intermédiaires (<code>map</code>, <code>filter</code>,
+        <code>sorted</code>, …) sont <strong>paresseuses</strong> : elles ne sont pas
+        exécutées tout de suite. Java construit une description du pipeline. Le
+        calcul ne démarre que lorsqu’on appelle une <strong>opération
+        terminale</strong> comme <code>collect()</code> ou <code>findFirst()</code>.
+        Cela permet :
+      </p>
+      <ul>
+        <li>d’optimiser le parcours (fusion des étapes),</li>
+        <li>d’arrêter dès qu’on a le résultat (ex. <code>findFirst</code>),</li>
+        <li>de travailler avec des Streams potentiellement infinis
+          (ex. <code>IntStream.iterate</code>) combinés avec <code>limit</code>.</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>4. Quelle est la différence entre <code>map</code> et <code>flatMap</code> ? Donne un exemple typique.</summary>
+      <p>
+        <code>map</code> transforme chaque élément en <em>un seul</em> nouvel élément.
+        On reste à un niveau de structure.
+      </p>
+      <p>
+        <code>flatMap</code> transforme chaque élément en un Stream (ou une autre
+        collection), puis « aplatit » tous ces Streams en un seul Stream. On passe
+        d’une structure imbriquée (par ex. <code>Stream&lt;List&lt;T&gt;&gt;</code>) à
+        un simple <code>Stream&lt;T&gt;</code>.
+      </p>
+      <p>
+        Exemple : on a une <code>List&lt;List&lt;String&gt;&gt;</code> de groupes
+        d’étudiants. Pour itérer sur tous les étudiants :
+      </p>
+      <p><code>groupes.stream().flatMap(List::stream)</code> &rarr; <code>Stream&lt;String&gt;</code></p>
+    </details>
+
+    <details>
+      <summary>5. Explique la différence entre <code>filter</code> et <code>distinct</code>.</summary>
+      <p>
+        <code>filter(Predicate)</code> garde uniquement les éléments qui satisfont
+        une condition (ex : <code>x -&gt; x &gt; 10</code>).
+      </p>
+      <p>
+        <code>distinct()</code> supprime les doublons selon <code>equals()</code> /
+        <code>hashCode()</code>, sans condition explicite de l’utilisateur.
+      </p>
+    </details>
+
+    <details>
+      <summary>6. Que font les méthodes <code>anyMatch</code>, <code>allMatch</code> et <code>noneMatch</code> ?</summary>
+      <p>
+        Ce sont des opérations terminales qui testent un prédicat sur tout le
+        Stream :
+      </p>
+      <ul>
+        <li><code>anyMatch(p)</code> : renvoie <code>true</code> si au moins un
+          élément vérifie <code>p</code>.</li>
+        <li><code>allMatch(p)</code> : renvoie <code>true</code> si tous les
+          éléments vérifient <code>p</code>.</li>
+        <li><code>noneMatch(p)</code> : renvoie <code>true</code> si aucun élément
+          ne vérifie <code>p</code>.</li>
+      </ul>
+      <p>
+        Elles peuvent arrêter le parcours dès que le résultat est connu (court-circuit).
+      </p>
+    </details>
+
+    <details>
+      <summary>7. En quoi <code>findFirst()</code> et <code>findAny()</code> se distinguent-ils, surtout en mode parallèle ?</summary>
+      <p>
+        Les deux renvoient un <code>Optional&lt;T&gt;</code> avec un élément du
+        Stream ou vide si le Stream est vide.
+      </p>
+      <ul>
+        <li><code>findFirst()</code> renvoie systématiquement le premier élément
+          (dans l’ordre du Stream). Important si l’ordre a un sens.</li>
+        <li><code>findAny()</code> peut renvoyer n’importe quel élément en mode
+          parallèle (celui trouvé en premier par un thread). Il permet parfois des
+          optimisations.</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>8. Quelle est la différence entre <code>reduce</code> et <code>collect</code> ? Dans quels cas utiliser l’un ou l’autre ?</summary>
+      <p>
+        <strong><code>reduce</code></strong> : combine les éléments du Stream en une
+        seule valeur, en appliquant itérativement une fonction associative
+        (somme, produit, min, max, etc.). Résultat typique : <code>int</code>,
+        <code>double</code>, un objet, etc.
+      </p>
+      <p>
+        <strong><code>collect</code></strong> : construit une structure plus
+        complexe à partir du Stream en utilisant un <code>Collector</code> :
+        <code>toList()</code>, <code>groupingBy()</code>, <code>joining()</code>,
+        etc. Il est pensé pour « ramasser » les éléments dans une Collection, une
+        Map ou produire des statistiques.
+      </p>
+      <p>
+        Règle pratique : pour une simple valeur agrégée (somme, max) tu peux
+        utiliser <code>reduce</code> ou les méthodes <code>sum()</code>,
+        <code>max()</code>. Pour construire une <code>List</code>, <code>Set</code>,
+        <code>Map</code> ou faire des regroupements, <code>collect</code> est le bon
+        outil.
+      </p>
+    </details>
+
+    <details>
+      <summary>9. Que font <code>takeWhile</code> et <code>dropWhile</code> sur un Stream ?</summary>
+      <p>
+        <code>takeWhile(p)</code> :
+        on prend les éléments du début tant que le prédicat <code>p</code> est
+        vrai, puis on arrête et on ignore le reste.
+      </p>
+      <p>
+        <code>dropWhile(p)</code> :
+        on ignore les éléments du début tant que <code>p</code> est vrai, puis on
+        garde tous les suivants.
+      </p>
+      <p>
+        Elles sont surtout utiles sur des Streams <em>ordonnés</em>.
+      </p>
+    </details>
+
+    <details>
+      <summary>10. Quelle est la différence entre <code>Stream&lt;Integer&gt;</code> et <code>IntStream</code> ?</summary>
+      <p>
+        <code>Stream&lt;Integer&gt;</code> est un Stream d’objets
+        <code>Integer</code> (type référence). Chaque valeur doit être
+        boxée/déboxée, ce qui coûte des allocations et du temps.
+      </p>
+      <p>
+        <code>IntStream</code> est un Stream spécialisé pour <code>int</code>,
+        sans boxing, avec des méthodes adaptées : <code>sum()</code>,
+        <code>average()</code>, <code>range</code>, <code>rangeClosed</code>,
+        <code>mapToObj</code>, etc. Il est plus efficace pour beaucoup
+        d’opérations numériques.
+      </p>
+    </details>
+
+    <details>
+      <summary>11. À quoi sert typiquement <code>IntStream.range</code> dans les exemples de primalité ?</summary>
+      <p>
+        Pour tester si un nombre <code>n</code> est premier, on peut vérifier
+        qu’aucun entier entre 2 et <code>n-1</code> (ou jusqu’à √n) ne divise
+        <code>n</code>. On utilise alors :
+      </p>
+      <p><code>IntStream.range(2, n).noneMatch(i -&gt; n % i == 0)</code></p>
+      <p>
+        <code>range</code> génère facilement la séquence d’indices des diviseurs
+        possibles, et <code>noneMatch</code> vérifie qu’aucun ne divise <code>n</code>.
+      </p>
+    </details>
+
+    <details>
+      <summary>12. Quel est le rôle de la méthode <code>peek</code> ? Pourquoi faut-il faire attention en l’utilisant ?</summary>
+      <p>
+        <code>peek</code> prend un <code>Consumer</code> et permet d’« observer »
+        les éléments qui circulent dans le Stream (souvent pour du debug ou des
+        logs). Elle est intermédiaire et <strong>lazy</strong>. On l’utilise par
+        exemple pour imprimer l’état après chaque étape.
+      </p>
+      <p>
+        Il faut éviter d’y mettre des effets de bord importants (modifier une
+        structure externe, changer un état global), car cela casse le style
+        fonctionnel et peut devenir dangereux en Stream parallèle.
+      </p>
+    </details>
+
+    <details>
+      <summary>13. Donne les trois principales façons de créer un Stream dans les fiches de cours.</summary>
+      <p>
+        <ul>
+          <li><code>collection.stream()</code> à partir d’une <code>Collection</code></li>
+          <li><code>Arrays.stream(tableau)</code> à partir d’un tableau</li>
+          <li><code>Stream.of(v1, v2, ...)</code> à partir de valeurs explicites</li>
+        </ul>
+      </p>
+    </details>
+
+    <details>
+      <summary>14. Quelle est la différence entre <code>sorted()</code> et <code>sorted(Comparator)</code> ?</summary>
+      <p>
+        <code>sorted()</code> trie les éléments selon leur <em>ordre naturel</em>
+        (ils doivent implémenter <code>Comparable</code> : par ex.
+        <code>String</code>, <code>Integer</code>).
+      </p>
+      <p>
+        <code>sorted(Comparator)</code> prend un <code>Comparator</code> explicite.
+        Tu peux donc trier par longueur, par un champ d’objet, en ordre décroissant, etc.
+      </p>
+    </details>
+
+    <details>
+      <summary>15. Donne trois collecteurs importants de <code>Collectors</code> et explique leur rôle.</summary>
+      <p>
+        <ul>
+          <li><code>toList()</code> : collecte les éléments dans une nouvelle
+            <code>List</code>.</li>
+          <li><code>groupingBy(keyFn)</code> : regroupe les éléments dans une
+            <code>Map&lt;K,List&lt;T&gt;&gt;</code> selon une clé calculée (par
+            exemple la première lettre d’un nom).</li>
+          <li><code>joining(delim)</code> : concatène les chaînes du Stream avec
+            un délimiteur (par ex. <code>","</code>), en renvoyant un
+            <code>String</code>.</li>
+        </ul>
+        Il y en a beaucoup d’autres : <code>counting</code>, <code>summingInt</code>,
+        <code>partitioningBy</code>, <code>mapping</code>, etc.
+      </p>
+    </details>
+  </section>
+
+  <!-- ===================== GENERICS ===================== -->
+  <section id="generics">
+    <h2>2. Generics (types paramétrés, wildcards, PECS)</h2>
+
+    <details>
+      <summary>1. Pourquoi Java a-t-il introduit les generics ? Donne deux objectifs principaux.</summary>
+      <p>
+        Les generics ont été introduits pour :
+      </p>
+      <ul>
+        <li><strong>Typsicherheit</strong> (sécurité de type) : détecter au
+          <em>compilateur</em> des erreurs de type qui avant n’apparaissaient
+          qu’à l’exécution (par ex. ajouter un <code>Integer</code> dans une
+          liste de <code>String</code>).</li>
+        <li><strong>Réutilisabilité</strong> : écrire des classes/méthodes
+          génériques (par ex. <code>Box&lt;T&gt;</code>, <code>List&lt;T&gt;</code>)
+          qui fonctionnent pour plusieurs types sans dupliquer le code.</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>2. Quelle est la différence entre <code>List&lt;Object&gt;</code> et <code>List&lt;?&gt;</code> ?</summary>
+      <p>
+        <code>List&lt;Object&gt;</code> est une liste qui contient des
+        <code>Object</code>. On peut y ajouter <em>n’importe quel type</em>
+        d’objet (String, Integer, etc.) car tout hérite de Object.
+      </p>
+      <p>
+        <code>List&lt;?&gt;</code> est une liste d’un type inconnu. On ne sait pas
+        si c’est une <code>List&lt;String&gt;</code>, <code>List&lt;Integer&gt;</code>,
+        etc. On peut lire des <code>Object</code>, mais on ne peut quasiment
+        rien ajouter (sauf <code>null</code>), car ce ne serait pas type-safe.
+      </p>
+      <p>
+        On utilise <code>List&lt;?&gt;</code> pour écrire des méthodes qui
+        fonctionnent avec des listes de n’importe quel type, mais
+        <em>en lecture seule</em>.
+      </p>
+    </details>
+
+    <details>
+      <summary>3. Que signifient les lettres <code>T</code>, <code>E</code>, <code>K</code>, <code>V</code> dans les types génériques ?</summary>
+      <p>
+        Ce sont des conventions de nommage :
+      </p>
+      <ul>
+        <li><code>T</code> : <em>Type</em> générique quelconque.</li>
+        <li><code>E</code> : <em>Element</em> (souvent dans les collections).</li>
+        <li><code>K</code> : <em>Key</em> (clé dans une Map).</li>
+        <li><code>V</code> : <em>Value</em> (valeur dans une Map).</li>
+      </ul>
+      <p>Ce ne sont que des conventions, le compilateur ne les impose pas.</p>
+    </details>
+
+    <details>
+      <summary>4. Explique la règle PECS : « Producer Extends, Consumer Super ».</summary>
+      <p>
+        PECS aide à choisir entre <code>? extends T</code> et <code>? super T</code> :
+      </p>
+      <ul>
+        <li><strong>Producer extends</strong> : si le paramètre <em>produit</em>
+          des valeurs de type <code>T</code> (tu lis dedans), utilise
+          <code>? extends T</code>. Exemple :
+          <code>List&lt;? extends Number&gt;</code> pour lire des
+          <code>Number</code> sans savoir si c’est <code>Integer</code> ou
+          <code>Double</code>.</li>
+        <li><strong>Consumer super</strong> : si le paramètre <em>consomme</em>
+          des valeurs de type <code>T</code> (tu écris dedans), utilise
+          <code>? super T</code>. Exemple :
+          <code>List&lt;? super Integer&gt;</code> dans laquelle tu peux ajouter
+          des <code>Integer</code> en étant sûr qu’ils sont compatibles avec le
+          type réel.</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>5. Quand utiliser <code>? extends T</code> et quand utiliser <code>? super T</code> ? Donne un exemple pour chacun.</summary>
+      <p>
+        <strong><code>? extends T</code></strong> : pour une source de données
+        (producer) que tu ne modifies pas.
+      </p>
+      <p>
+        Exemple : une méthode qui calcule la somme d’une
+        <code>List&lt;? extends Number&gt;</code> &ndash; tu lis des
+        <code>Number</code>, mais tu ne veux pas ajouter dans la liste.
+      </p>
+      <p>
+        <strong><code>? super T</code></strong> : pour une cible (consumer) dans
+        laquelle tu veux écrire des <code>T</code>.
+      </p>
+      <p>
+        Exemple : une méthode <code>copyAll(List&lt;? super T&gt; dest,
+        List&lt;? extends T&gt; src)</code> qui copie tous les éléments de
+        <code>src</code> dans <code>dest</code>.
+      </p>
+    </details>
+
+    <details>
+      <summary>6. Pourquoi ne peut-on pas ajouter un <code>Integer</code> dans une <code>List&lt;? extends Number&gt;</code> ?</summary>
+      <p>
+        Parce que le type réel pourrait être <code>List&lt;Double&gt;</code>,
+        <code>List&lt;Long&gt;</code>, etc. Le compilateur ne sait pas quel
+        sous-type de <code>Number</code> est réellement autorisé. Pour rester
+        sûr, il interdit l’ajout (sauf <code>null</code>).
+      </p>
+      <p>
+        C’est le prix à payer pour la flexibilité de <code>? extends Number</code>.
+      </p>
+    </details>
+
+    <details>
+      <summary>7. Quels sont les avantages de Generics pour les Collections ?</summary>
+      <p>
+        <ul>
+          <li><strong>Typsicherheit</strong> : une <code>List&lt;String&gt;</code>
+            ne peut contenir que des <code>String</code>, donc pas de
+            <code>ClassCastException</code> plus tard.</li>
+          <li><strong>Lisibilité</strong> : en lisant
+            <code>Map&lt;String, Integer&gt;</code> on sait immédiatement que les
+            clés sont des <code>String</code> et les valeurs des
+            <code>Integer</code>.</li>
+          <li><strong>Moins de casts</strong> : plus besoin de convertir
+            manuellement <code>(String)</code> en sortant d’une Collection
+            générique.</li>
+        </ul>
+      </p>
+    </details>
+
+    <details>
+      <summary>8. Qu’est-ce qu’un « raw type » (type brut) et pourquoi faut-il l’éviter ?</summary>
+      <p>
+        Un <strong>raw type</strong> est l’utilisation d’une classe générique
+        sans paramètre de type, par exemple <code>List</code> au lieu de
+        <code>List&lt;String&gt;</code>. Cela désactive la vérification des
+        types génériques, comme avant Java 5.
+      </p>
+      <p>
+        On l’évite car :
+      </p>
+      <ul>
+        <li>le compilateur ne peut plus garantir la sécurité de type,</li>
+        <li>on peut mélanger des types incompatibles dans la même Collection,</li>
+        <li>on risque des <code>ClassCastException</code> à l’exécution.</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>9. Que signifie la déclaration <code>class Box&lt;T extends Number&gt;</code> ?</summary>
+      <p>
+        Elle définit une classe générique <code>Box</code> dont le paramètre de
+        type <code>T</code> doit être <code>Number</code> ou une sous-classe de
+        <code>Number</code> (<code>Integer</code>, <code>Double</code>, etc.).
+      </p>
+      <p>
+        Cela garantit que tous les <code>T</code> ont au moins les méthodes de
+        <code>Number</code> (comme <code>doubleValue()</code>), ce qui permet
+        d’écrire un code numérique générique.
+      </p>
+    </details>
+
+    <details>
+      <summary>10. Quelles sont les limitations des Generics en Java (par rapport à d’autres langages) ?</summary>
+      <p>
+        <ul>
+          <li>On ne peut pas avoir de <code>List&lt;int&gt;</code>, seulement
+            <code>List&lt;Integer&gt;</code> (pas de types primitifs).</li>
+          <li>On ne peut pas instancier directement un type générique :
+            <code>new T()</code> est interdit.</li>
+          <li>On ne peut pas créer de tableau de type paramétré :
+            <code>new List&lt;String&gt;[10]</code> est interdit.</li>
+          <li>À cause de l’effacement de type (<em>type erasure</em>), les
+            informations de type générique ne sont plus disponibles à
+            l’exécution.</li>
+        </ul>
+      </p>
+    </details>
+  </section>
+
+  <!-- ===================== COLLECTIONS ===================== -->
+  <section id="collections">
+    <h2>3. Collections (List, Set, Map, Collections, Arrays vs Collections)</h2>
+
+    <details>
+      <summary>1. Donne la différence principale entre <code>List</code>, <code>Set</code> et <code>Map</code>.</summary>
+      <p>
+        <ul>
+          <li><strong>List</strong> : collection <em>ordonnée</em> d’éléments, indexée,
+            accepte les doublons. On accède par <code>get(index)</code>.</li>
+          <li><strong>Set</strong> : ensemble sans doublons, ordre non garanti
+            (sauf implémentations spéciales). Pas d’index.</li>
+          <li><strong>Map</strong> : associe des <em>clés</em> et des
+            <em>valeurs</em>. Chaque clé est unique, les valeurs peuvent être
+            en doublon. On accède par <code>get(key)</code>.</li>
+        </ul>
+      </p>
+    </details>
+
+    <details>
+      <summary>2. Associe ces scénarios à List, Set ou Map :
+        (a) participants d’un cours (pas de doublons),
+        (b) playlist de musique (ordre important, doublons possibles),
+        (c) dictionnaire DE–EN.</summary>
+      <p>
+        <ul>
+          <li>(a) participants d’un cours : <strong>Set</strong> (pas de doublons).</li>
+          <li>(b) playlist : <strong>List</strong> (ordre important, doublons
+            possibles).</li>
+          <li>(c) dictionnaire : <strong>Map</strong> (clé = mot allemand,
+            valeur = traduction anglaise).</li>
+        </ul>
+      </p>
+    </details>
+
+    <details>
+      <summary>3. Quand choisir une <code>ArrayList</code> et quand choisir une <code>LinkedList</code> ?</summary>
+      <p>
+        <strong>ArrayList</strong> :
+      </p>
+      <ul>
+        <li>accès rapide par index (<code>get(i)</code>),</li>
+        <li>bon pour beaucoup de lectures, peu d’inserts au milieu,</li>
+        <li>insertion/suppression au milieu coûteuse (décalage dans le tableau).</li>
+      </ul>
+      <p>
+        <strong>LinkedList</strong> :
+      </p>
+      <ul>
+        <li>meilleure pour des insertions/suppressions fréquentes au début ou au
+          milieu,</li>
+        <li>accès par index plus lent (parcours de la liste).</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>4. Compare <code>HashSet</code>, <code>LinkedHashSet</code> et <code>TreeSet</code>.</summary>
+      <p>
+        <ul>
+          <li><strong>HashSet</strong> : très rapide pour <code>add</code>,
+            <code>remove</code>, <code>contains</code> (O(1) amorti), pas
+            d’ordre garanti.</li>
+          <li><strong>LinkedHashSet</strong> : conserve l’ordre d’insertion,
+            légèrement plus lent, utile si on veut itérer dans l’ordre
+            d’ajout.</li>
+          <li><strong>TreeSet</strong> : garde les éléments triés selon
+            l’ordre naturel ou un <code>Comparator</code>. Opérations en
+            O(log n). Pratique quand on a besoin d’un ensemble <em>trié</em>.</li>
+        </ul>
+      </p>
+    </details>
+
+    <details>
+      <summary>5. Compare <code>HashMap</code>, <code>LinkedHashMap</code> et <code>TreeMap</code>.</summary>
+      <p>
+        <ul>
+          <li><strong>HashMap</strong> : standard rapide pour associer clés et
+            valeurs. Pas d’ordre des clés.</li>
+          <li><strong>LinkedHashMap</strong> : conserve l’ordre d’insertion
+            des clés (ou éventuellement l’ordre d’accès si configuré).</li>
+          <li><strong>TreeMap</strong> : trie les clés selon l’ordre naturel ou
+            un <code>Comparator</code>. Permet des opérations de navigation
+            (<code>firstKey()</code>, <code>subMap()</code>...).</li>
+        </ul>
+      </p>
+    </details>
+
+    <details>
+      <summary>6. Quels sont les avantages d’une <code>ArrayList&lt;String&gt;</code> par rapport à un <code>String[]</code> ? Donne au moins 3 points.</summary>
+      <p>
+        <ul>
+          <li><strong>Taille dynamique</strong> : une ArrayList peut grandir ou
+            rétrécir (add/remove), un tableau a une taille fixe.</li>
+          <li><strong>Méthodes pratiques</strong> : <code>add</code>,
+            <code>remove</code>, <code>contains</code>, <code>sort</code>, etc.,
+            alors qu’un tableau n’a que <code>.length</code>.</li>
+          <li><strong>Generics</strong> : une <code>List&lt;String&gt;</code>
+            est typesafe, on ne peut pas y mettre autre chose que des Strings.</li>
+          <li><strong>Intégration</strong> avec Streams et Collections :
+            <code>list.stream()</code> marche directement, <code>Arrays.stream</code>
+            est nécessaire pour les tableaux.</li>
+        </ul>
+      </p>
+    </details>
+
+    <details>
+      <summary>7. Quand choisir un tableau plutôt qu’une Collection ?</summary>
+      <p>
+        <ul>
+          <li>Quand le nombre d’éléments est fixe et connu à l’avance.</li>
+          <li>Quand on manipule beaucoup de types primitifs (ex. <code>int[]</code>)
+            et qu’on veut éviter le boxing.</li>
+          <li>Quand la performance très bas niveau est critique (optimisation
+            fine d’algorithmes).</li>
+        </ul>
+      </p>
+    </details>
+
+    <details>
+      <summary>8. Quelles méthodes importantes fournit la classe utilitaire <code>Collections</code> ? Donne au moins quatre exemples.</summary>
+      <p>
+        Exemples de méthodes importantes :
+      </p>
+      <ul>
+        <li><code>sort(List)</code> : trie une liste.</li>
+        <li><code>reverse(List)</code> : inverse l’ordre des éléments.</li>
+        <li><code>shuffle(List)</code> : mélange aléatoirement.</li>
+        <li><code>binarySearch(List, key)</code> : recherche dichotomique sur
+          une liste triée.</li>
+        <li><code>min(Collection)</code>, <code>max(Collection)</code> :
+          plus petit / plus grand élément.</li>
+        <li><code>frequency(Collection, obj)</code> : compte les occurrences.</li>
+        <li><code>disjoint(Collection, Collection)</code> : teste s’il n’y a
+          aucun élément en commun.</li>
+        <li><code>copy(dest, src)</code> : copie les éléments d’une liste vers
+          une autre.</li>
+        <li><code>fill(list, obj)</code> : remplace tous les éléments par
+          <code>obj</code>.</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>9. Comment créer rapidement des Collections immuables avec <code>List.of</code>, <code>Set.of</code>, <code>Map.of</code> ?</summary>
+      <p>
+        <ul>
+          <li><code>List.of(e1, e2, ...)</code> : crée une liste immuable.</li>
+          <li><code>Set.of(e1, e2, ...)</code> : crée un ensemble immuable (pas
+            de doublons autorisés).</li>
+          <li><code>Map.of(k1, v1, k2, v2, ...)</code> : crée une Map
+            immuable (jusqu’à 10 paires).</li>
+          <li><code>Map.ofEntries(Map.entry(k,v), ...)</code> : version pour
+            un nombre arbitraire de paires.</li>
+        </ul>
+        Les collections retournées ne peuvent pas être modifiées
+        (<code>add</code>, <code>remove</code> provoquent une exception).
+      </p>
+    </details>
+
+    <details>
+      <summary>10. Quelle est la relation entre <code>Iterable</code>, Collections et Streams ?</summary>
+      <p>
+        <ul>
+          <li>Toutes les <strong>Collections</strong> implémentent
+            <code>Iterable</code>, ce qui permet le <code>for-each</code> :</li>
+        </ul>
+        <p><code>for (String s : list) { ... }</code></p>
+        <ul>
+          <li>Les Collections offrent aussi la méthode <code>stream()</code> qui
+            crée un Stream à partir de la Collection.</li>
+          <li>Les tableaux ne sont pas des <code>Iterable</code>, mais Java
+            supporte un for-each spécial dessus, et on peut créer un Stream via
+            <code>Arrays.stream(array)</code> ou <code>Stream.of(array)</code>.</li>
+        </ul>
+      </p>
+    </details>
+  </section>
+
+  <!-- ===================== JSHELL / MAVEN / JAVA ===================== -->
+  <section id="tools">
+    <h2>4. JShell, exécution Java, Maven &amp; Build-Tools</h2>
+
+    <details>
+      <summary>1. Qu’est-ce que JShell et à quoi sert-il dans le cours ?</summary>
+      <p>
+        JShell est le <strong>REPL</strong> (Read-Eval-Print-Loop) de Java. Il
+        permet d’exécuter du code Java de manière interactive, ligne par ligne :
+      </p>
+      <ul>
+        <li>tester rapidement des expressions ou des méthodes,</li>
+        <li>charger du code depuis des fichiers,</li>
+        <li>expérimenter avec de petites portions de code sans créer de
+          projet complet.</li>
+      </ul>
+      <p>
+        C’est très utile pour apprendre et pour expérimenter avec les Streams,
+        les Collections, etc.
+      </p>
+    </details>
+
+    <details>
+      <summary>2. Explique la différence entre <code>javac</code> et <code>java</code>.</summary>
+      <p>
+        <ul>
+          <li><code>javac</code> est le <strong>compilateur</strong> Java : il
+            traduit les fichiers <code>.java</code> (code source) en fichiers
+            <code>.class</code> (bytecode).</li>
+          <li><code>java</code> est le <strong>lanceur</strong> de la JVM :
+            il démarre la machine virtuelle et exécute le bytecode d’une classe
+            (celle qui contient <code>public static void main(String[] args)</code>).</li>
+        </ul>
+      </p>
+    </details>
+
+    <details>
+      <summary>3. Qu’est-ce qu’un « single-file program » et des top-level statements en Java moderne ?</summary>
+      <p>
+        Un <strong>single-file program</strong> est un programme Java contenu
+        dans un seul fichier <code>.java</code>, exécuté directement par
+        <code>java MonFichier.java</code> sans étape manuelle <code>javac</code>.
+      </p>
+      <p>
+        Les <strong>top-level statements</strong> sont du code écrit directement
+        dans le fichier, en dehors d’une classe/ méthode <code>main</code> :
+        Java crée automatiquement une classe et un point d’entrée pour les
+        exécuter. Cela réduit la barrière d’entrée (plus besoin d’écrire tout
+        le boilerplate dès le début).
+      </p>
+    </details>
+
+    <details>
+      <summary>4. Pourquoi a-t-on besoin de build-tools comme Maven dans des projets plus gros ?</summary>
+      <p>
+        Pour de petits scripts, <code>javac</code> et <code>java</code> suffisent.
+        Mais pour des projets plus grands, il faut :
+      </p>
+      <ul>
+        <li>gérer les <strong>dépendances</strong> (bibliothèques externes),</li>
+        <li>organiser les sources et les tests,</li>
+        <li>compiler, tester, empaqueter (JAR), installer, déployer,</li>
+        <li>automatiser les builds, l’intégration continue, etc.</li>
+      </ul>
+      <p>
+        Maven (ou Gradle) fournit ce cadre standardisé pour tout le cycle de vie
+        du projet.
+      </p>
+    </details>
+
+    <details>
+      <summary>5. Cite au moins trois build-tools Java et indique lequel est utilisé dans le cours.</summary>
+      <p>
+        Exemples de build-tools :
+      </p>
+      <ul>
+        <li>Apache Ant (ancien, surtout legacy)</li>
+        <li><strong>Apache Maven</strong> (très répandu et utilisé dans le cours)</li>
+        <li>Gradle (build moderne basé sur DSL Groovy/Kotlin)</li>
+        <li>Apache Ivy (gestion de dépendances, plutôt avec Ant)</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>6. Qu’est-ce qu’un <em>artifact</em>, un <em>lifecycle</em>, une <em>phase</em> et un <em>goal</em> dans Maven ?</summary>
+      <p>
+        <ul>
+          <li><strong>Artifact</strong> : un élément produit ou utilisé par le
+            build (par ex. JAR, plugin, bibliothèque externe).</li>
+          <li><strong>Lifecycle</strong> : le cycle de vie complet d’un build
+            (ex. <code>clean</code>, <code>default</code>, <code>site</code>).</li>
+          <li><strong>Phase</strong> : une étape dans un lifecycle
+            (ex. <code>compile</code>, <code>test</code>,
+            <code>package</code>, <code>install</code>, <code>deploy</code>).</li>
+          <li><strong>Goal</strong> : une action concrète d’un plugin
+            (par ex. compiler le code, lancer les tests, créer un JAR). Les
+            phases sont remplies par des goals.</li>
+        </ul>
+      </p>
+    </details>
+
+    <details>
+      <summary>7. À quoi sert le fichier <code>pom.xml</code> dans un projet Maven ?</summary>
+      <p>
+        <code>pom.xml</code> est la configuration centrale du projet Maven
+        (<em>Project Object Model</em>). Il contient :
+      </p>
+      <ul>
+        <li>les coordonnées du projet (groupId, artifactId, version),</li>
+        <li>la liste des dépendances,</li>
+        <li>la configuration des plugins,</li>
+        <li>les profiles, les informations de build, etc.</li>
+      </ul>
+      <p>
+        Maven lit ce fichier pour savoir comment construire le projet.
+      </p>
+    </details>
+
+    <details>
+      <summary>8. Donne la commande Maven pour : compiler, tester, empaqueter et installer un projet.</summary>
+      <p>
+        <ul>
+          <li>Compiler : <code>mvn compile</code></li>
+          <li>Tester : <code>mvn test</code></li>
+          <li>Créer un JAR : <code>mvn package</code></li>
+          <li>Installer dans le dépôt local : <code>mvn install</code></li>
+        </ul>
+      </p>
+    </details>
+
+    <details>
+      <summary>9. Qu’est-ce qu’un « profile » Maven et à quoi peut-il servir ?</summary>
+      <p>
+        Un <strong>profile</strong> Maven est un ensemble de configurations
+        alternatives pour un même projet (par ex. <code>dev</code>,
+        <code>prod</code>). On peut y mettre :
+      </p>
+      <ul>
+        <li>des propriétés différentes (URL de base de données, options de
+          debug),</li>
+        <li>des dépendances spécifiques,</li>
+        <li>des plugins configurés différemment.</li>
+      </ul>
+      <p>
+        On active un profile avec <code>mvn ... -Pdev</code>, par exemple.
+      </p>
+    </details>
+
+    <details>
+      <summary>10. Comment Maven gère-t-il les dépendances externes comme JUnit ?</summary>
+      <p>
+        On déclare les dépendances dans <code>pom.xml</code> dans le bloc
+        <code>&lt;dependencies&gt;</code>. Exemple :
+      </p>
+      <pre><code>&lt;dependency&gt;
+  &lt;groupId&gt;junit&lt;/groupId&gt;
+  &lt;artifactId&gt;junit&lt;/artifactId&gt;
+  &lt;version&gt;4.13.2&lt;/version&gt;
+  &lt;scope&gt;test&lt;/scope&gt;
+&lt;/dependency&gt;</code></pre>
+      <p>
+        Maven télécharge automatiquement les JAR depuis des dépôts (par ex.
+        Maven Central) et les met sur le classpath pour compiler et exécuter les
+        tests.
+      </p>
+    </details>
+  </section>
+
+</body>
+</html>
